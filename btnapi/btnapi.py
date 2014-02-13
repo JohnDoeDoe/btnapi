@@ -4,12 +4,12 @@ JSON-RPC interface to the BTNAPI
 Author:  missionsix <btn-api@missionsix.net>
 Date:  Sept 2012
 """
-import httplib
+import http.client
 import json
 import random
 import string
 import types
-import urllib
+import urllib.request, urllib.parse, urllib.error
 
 from itertools import count
 
@@ -38,8 +38,8 @@ def dumps(params=[], method=None, encoding='utf-8', rpcid=None, notify=None):
 
     if not notify:
         s['id'] = rpcid if rpcid else random_id()
-            
-    return json.dumps(s, encoding=encoding)
+
+    return json.dumps(s)
 
 
 def loads(data):
@@ -69,17 +69,17 @@ class BtnApi:
     def __init__(self, api_key, btn_uri, api_port=80):
         self.api_key = api_key
         self.__port = api_port
-        
-        schema, uri = urllib.splittype(btn_uri)
+
+        schema, uri = urllib.parse.splittype(btn_uri)
         if schema not in ('http', 'https'):
             raise IOError('Unsupported JSON-RPC protocol.')
 
-        self.__host, self.__handler = urllib.splithost(uri)
+        self.__host, self.__handler = urllib.parse.splithost(uri)
         if not self.__handler:
             self.__handler = '/'
 
-        self.__conn = httplib.HTTPConnection(self.__host, self.__port)
-        
+        self.__conn = http.client.HTTPConnection(self.__host, self.__port)
+
 
     def __request(self, method, req_params=None):
         params = [self.api_key]
@@ -96,7 +96,7 @@ class BtnApi:
         if resp.status != 200:
             raise BTNAPIException(resp.status, resp.reason)
 
-        result = loads(resp.read())
+        result = loads(resp.read().decode("utf-8"))
         return self.__result(result)
 
 
@@ -118,5 +118,3 @@ class BtnApi:
     def __del__(self):
         if self.__conn:
             self.__conn.close()
-
-    
